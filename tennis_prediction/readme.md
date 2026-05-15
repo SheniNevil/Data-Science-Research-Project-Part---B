@@ -51,16 +51,16 @@ Each yearly file contains match-level statistics such as player names, ranks, su
 tennis_prediction
 ├── data
 │   └── raw
-│       └── tennis\_atp-master   # Main-tour atp\_matches\_YYYY.csv (1968–2024)
+│       └── tennis_atp-master   # Main-tour atp_matches_YYYY.csv (1968–2024)
 ├── models    
 ├── src
-│   ├── data\_loader.py          # Load & subset ATP data (year range, max\_rows)
-│   ├── preprocessing.py       # Canonicalize columns,clean dates/surface/ranks
-│   ├── features.py            # Elo,rolling form,H2H(Bayesian),build\_diff\_dataset
+│   ├── data_loader.py          # Load & subset ATP data (year range, max_rows)
+│   ├── preprocessing.py       # Canonicalize columns,clean dates surface ranks
+│   ├── features.py            # Elo,rolling form,H2H(Bayesian),build_diff_dataset
 │   └── models
-│       └── \_\_init\_\_.py
+│       └── __init__.py
 ├── tennis-prediction.ipynb     # Full pipeline: load → features → train → save
-├── app.py                      # Streamlit dashboard (predict \& explore)
+├── app.py                      # Streamlit dashboard (predict & explore)
 ├── requirements.txt
 └── README.md
 ```
@@ -73,7 +73,7 @@ tennis_prediction
 
 ```
 bash
-cd tennis\_prediction
+cd tennis_prediction
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -81,9 +81,9 @@ pip install -r requirements.txt
 
 ###### 2\. Prepare data
 
-Place the full [Jeff Sackmann tennis\_atp](https://github.com/JeffSackmann/tennis_atp) repo (or main-tour files) in: data/raw/tennis\_atp-master/
+Place the full [Jeff Sackmann tennis\_atp](https://github.com/JeffSackmann/tennis_atp) repo (or main-tour files) in: data/raw/tennis_atp-master/
 
-The notebook and `src.data\_loader` use main-tour singles only (`atp\_matches\_YYYY.csv`). We can subset by `YEAR\_MIN`, `YEAR\_MAX` or `MAX\_ROWS` in the notebook to speed up runs. If no local data is found, the notebook falls back to downloading a sample CSV.
+The notebook and `src.data_loader` use main-tour singles only (`atp_matches_YYYY.csv`). We can subset by `YEAR_MIN`, `YEAR_MAX` or `MAX_ROWS` in the notebook to speed up runs. If no local data is found, the notebook falls back to downloading a sample CSV.
 
 
 
@@ -123,8 +123,8 @@ Use the Predict tab to enter feature differences and get P(Player A wins). The E
 * Rest/Fatigue: days since last match.
 * Rank Difference: adjusted difference in ATP rankings.
 * Head-to-head: Bayesian-smoothed H2H win rate (prior weight 3, prior 0.5) as of before each match.
-* Player IDs: `winner\_id` / `loser\_id` from Sackmann when present; otherwise a stable synthetic id from the player name so entities stay mergeable.
-* Match-level Elo columns: Pre-match global and surface Elo for each side (`elo\_a`/`elo\_b`, `elo\_surf\_a`/`elo\_surf\_b`) alongside differences, for nonlinear favorite/underdog effects in tree models.
+* Player IDs: `winner_id` / `loser_id` from Sackmann when present; otherwise a stable synthetic id from the player name so entities stay mergeable.
+* Match-level Elo columns: Pre-match global and surface Elo for each side (`elo_a`/`elo_b`, `elo_surf_a`/`elo_surf_b`) alongside differences, for nonlinear favorite effects in tree models.
 
 
 
@@ -146,7 +146,7 @@ This ensures the model only sees past matches when predicting future outcomes, r
 
 Training rows are not independent: the same player appears in many matches and the mirrored two-row-per-match layout induces correlation.
 
-LightGBM uses `player\_a\_id` and `player\_b\_id` as categorical features—this is a practical, tree-based way to capture player-specific deviations from the Elo-based signal. The notebook prints a small per-player Brier summary on the test split as a repeated-measures diagnostic.
+LightGBM uses `player_a_id` and `player_b_id` as categorical features—this is a practical, tree-based way to capture player-specific deviations from the Elo-based signal. The notebook prints a small per-player Brier summary on the test split as a repeated-measures diagnostic.
 
 
 
@@ -160,23 +160,23 @@ A linear interpretable baseline trained on standardized numeric features only (d
 
 ```
 python
-from sklearn.linear\_model import LogisticRegression
-clf = LogisticRegression(max\_iter=1000)
-clf.fit(X\\\_train\_scaled, y\_train)
+from sklearn.linear_model import LogisticRegression
+clf = LogisticRegression(max_iter=1000)
+clf.fit(X_train_scaled, y_train)
 ```
 
 ###### 2\. LightGBM Classifier
 
-Tree-based gradient boosting model for non-linear relationships. When player ids are present, they are declared as categorical with moderate `min\_data\_in\_leaf` / `max\_depth` to limit overfitting on rare players.
+Tree-based gradient boosting model for non-linear relationships. When player ids are present, they are declared as categorical with moderate `min_data_in_leaf` / `max_depth` to limit overfitting on rare players.
 
 ```
 python
 import lightgbm as lgb
 params = {
 'objective': 'binary', 'metric': 'auc',
-'learning\_rate': 0.05, 'num\_leaves': 31
+'learning_rate': 0.05, 'num_leaves': 31
 }
-model = lgb.train(params, train\_data, valid\_sets=\[val\_data])
+model = lgb.train(params, train_data, valid_sets=[val_data])
 ```
 
 ###### 3\. LambdaRank (Learning-to-Rank)
@@ -205,11 +205,11 @@ Implemented LightGBM LambdaRank head that ingests one row per player per match (
 |-|-|
 |`models/scaler.joblib`|StandardScaler used for feature normalization|
 |`models/logistic.joblib`|Trained Logistic Regression model|
-|`models/logistic\_features.joblib`|Column names used for the logistic baseline (numeric only)|
-|`models/lgb\_classifier\_features.joblib`|Full feature list for the LightGBM classifier|
-|`models/lgb\_model.txt`|Trained LightGBM classifier (best iteration)|
-|`models/lgb\_lambdarank.txt`|Trained LightGBM LambdaRank booster|
-|`models/rank\_features.joblib`|Feature list used when building ranking inputs|
+|`models/logistic_features.joblib`|Column names used for the logistic baseline (numeric only)|
+|`models/lgb_classifier_features.joblib`|Full feature list for the LightGBM classifier|
+|`models/lgb_model.txt`|Trained LightGBM classifier (best iteration)|
+|`models/lgb_lambdarank.txt`|Trained LightGBM LambdaRank booster|
+|`models/rank_features.joblib`|Feature list used when building ranking inputs|
 
 These files can be loaded directly for inference or API deployment.
 
