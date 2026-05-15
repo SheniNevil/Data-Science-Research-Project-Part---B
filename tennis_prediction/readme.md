@@ -146,7 +146,7 @@ This ensures the model only sees past matches when predicting future outcomes, r
 
 Training rows are not independent: the same player appears in many matches and the mirrored two-row-per-match layout induces correlation.
 
-LightGBM uses `player_a_id` and `player_b_id` as categorical features—this is a practical, tree-based way to capture player-specific deviations from the Elo-based signal. The notebook prints a small per-player Brier summary on the test split as a repeated-measures diagnostic.
+LightGBM uses `player_a_id` and `player_b_id` as categorical features, this is a practical, tree-based way to capture player-specific deviations from the Elo-based signal. The notebook prints a small per-player Brier summary on the test split as a repeated-measures diagnostic.
 
 
 
